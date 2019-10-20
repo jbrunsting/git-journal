@@ -18,7 +18,7 @@ var initCmd = &cobra.Command{
 	Long:  "Create the repository to store the journal entries",
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
-        journalPath := path.Clean(viper.Get("journal-path").(string))
+        journalPath := path.Clean(viper.Get("journal-dir").(string))
 		fmt.Printf("Creating journal directory %v\n", journalPath)
 		err = os.Mkdir(journalPath, os.ModePerm)
 		if err != nil {

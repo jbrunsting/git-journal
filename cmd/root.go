@@ -18,8 +18,6 @@ var rootCmd = &cobra.Command{
 	Long:  "A journal which stores entries using git",
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -30,12 +28,15 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	viper.SetDefault("journal-path", ".journal")
+	viper.SetDefault("journal-dir", ".journal")
+	viper.SetDefault("name", "journal")
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.git-journal.yaml)")
-	rootCmd.PersistentFlags().StringVar(&journalPath, "journal-path", "", "path to the directory with the journal")
+	rootCmd.PersistentFlags().StringVar(&journalPath, "journal-dir", "", "path to the directory with the journal")
+	rootCmd.PersistentFlags().StringVar(&journalPath, "name", "", "name of the journal")
 
-	viper.BindPFlag("journal-path", rootCmd.PersistentFlags().Lookup("journal-path"))
+	viper.BindPFlag("journal-dir", rootCmd.PersistentFlags().Lookup("journal-dir"))
+	viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
 }
 
 func initConfig() {
