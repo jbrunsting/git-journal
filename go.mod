@@ -3,6 +3,7 @@ module git-journal
 go 1.13
 
 require (
+	github.com/google/uuid v1.1.1
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.5.0 // indirect
