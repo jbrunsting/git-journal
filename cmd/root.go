@@ -29,14 +29,11 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	viper.SetDefault("journal-dir", ".journal")
-	viper.SetDefault("name", "journal")
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.git-journal.yaml)")
 	rootCmd.PersistentFlags().StringVar(&journalPath, "journal-dir", "", "path to the directory with the journal")
-	rootCmd.PersistentFlags().StringVar(&journalPath, "name", "", "name of the journal")
 
 	viper.BindPFlag("journal-dir", rootCmd.PersistentFlags().Lookup("journal-dir"))
-	viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
 }
 
 func initConfig() {

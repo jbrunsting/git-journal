@@ -21,6 +21,8 @@ const (
 	DEFAULT_EDITOR = "vim"
 )
 
+var journalName string
+
 // entryCmd represents the entry command
 var entryCmd = &cobra.Command{
 	Use:   "entry",
@@ -111,4 +113,8 @@ var entryCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(entryCmd)
+
+	viper.SetDefault("name", "journal")
+	entryCmd.PersistentFlags().StringVar(&journalName, "name", "", "name of the journal")
+	viper.BindPFlag("name", entryCmd.PersistentFlags().Lookup("name"))
 }
