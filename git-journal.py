@@ -18,30 +18,70 @@ os.chdir(directory)
 path_md = "{}/{}".format(directory, JOURNAL_MD)
 path_json = "{}/{}".format(directory, JOURNAL_JSON)
 
-if command == "init":
+
+def files_exist():
+    return os.path.exists(path_md) and os.path.exists(path_json)
+
+
+def update_from_origin():
+    with open(path_json, "r+") as json_file:
+        local_json = json.loads(json_file.read())
+
+    subprocess.run(["git", "fetch"])
+    subprocess.run(["git", "reset", "--hard", "origin/master"])
+    with open(path_json, "r+") as json_file:
+        combined_json = json.loads(json_file.read())
+        if combined_json == local_json:
+            return False
+
+        combined_json.update(local_json)
+
+        json_file.seek(0)
+        json_file.write(json.dumps(combined_json))
+        json_file.truncate()
+
+    with open(path_md, "w") as md_file:
+        entries = sorted(
+            combined_json.values(),
+            key=lambda e: time.strptime(e["timestamp"], TIME_FORMAT),
+            reverse=True)
+        formatted = "\n".join([
+            "## {}\n\n{}\n".format(entry["timestamp"], entry["body"])
+            for entry in entries
+        ])
+        md_file.write(formatted)
+
+    return True
+
+
+def init():
     remote = sys.argv[3]
 
-    if os.path.exists(path_md) or os.path.exists(path_json):
+    if files_exist():
         print("Journal files already exist")
         sys.exit(1)
 
-    with open(path_json, "w+") as json_file:
-        json_file.write("{}")
-
-    with open(path_md, "w+") as md_file:
-        md_file.write("")
-
     subprocess.run(["git", "init"])
-    subprocess.run(["git", "add", JOURNAL_JSON])
-    subprocess.run(["git", "add", JOURNAL_MD])
-    subprocess.run(["git", "commit", "-m", "Initial commit"])
     subprocess.run(["git", "remote", "add", "origin", remote])
-    subprocess.run(["git", "push", "-u", "origin", "master"])
+    subprocess.run(["git", "pull"])
 
-elif command == "entry":
-    subprocess.run(["git", "checkout", "master"])
-    subprocess.run(["git", "branch", "-D", "journal-backup"])
-    subprocess.run(["git", "branch", "journal-backup"])
+    if not files_exist():
+        with open(path_json, "w") as json_file:
+            json_file.write("{}")
+
+        with open(path_md, "w") as md_file:
+            md_file.write("")
+
+        subprocess.run(["git", "add", JOURNAL_JSON])
+        subprocess.run(["git", "add", JOURNAL_MD])
+        subprocess.run(["git", "commit", "-m", "Initial commit"])
+        subprocess.run(["git", "push", "-u", "origin", "master"])
+
+
+def add_entry():
+    if not files_exist():
+        print("Journal files do not exist")
+        sys.exit(1)
 
     editor = os.environ.get("EDITOR", "vim")
 
@@ -60,31 +100,42 @@ elif command == "entry":
             "timestamp": entry_timestamp,
             "body": entry_body
         }
-
-    subprocess.run(["git", "fetch"])
-    subprocess.run(["git", "reset", "--hard", "origin/master"])
-    with open(path_json, "r+") as json_file:
-        combined_json = json.loads(json_file.read())
-        combined_json.update(local_json)
-
         json_file.seek(0)
-        json_file.write(json.dumps(combined_json))
+        json_file.write(json.dumps(local_json))
         json_file.truncate()
-
-    with open(path_md, "w") as md_file:
-        entries = sorted(
-            combined_json.values(),
-            key=lambda e: time.strptime(e["timestamp"], TIME_FORMAT),
-            reverse=True)
-        formatted = "\n".join([
-            "## {}\n\n{}\n".format(entry["timestamp"], entry["body"])
-            for entry in entries
-        ])
-        md_file.write(formatted)
 
     subprocess.run(["git", "add", JOURNAL_JSON])
     subprocess.run(["git", "add", JOURNAL_MD])
     title = entry_body.split("\n")[0]
     subprocess.run(
         ["git", "commit", "-m", title[:75] + (title[75:] and '...')])
+
+
+def sync():
+    if not files_exist():
+        print("Journal files do not exist")
+        sys.exit(1)
+
+    subprocess.run(["git", "checkout", "master"])
+    subprocess.run(["git", "branch", "-D", "journal-backup"])
+    subprocess.run(["git", "branch", "journal-backup"])
+
+    if update_from_origin():
+        subprocess.run(["git", "add", JOURNAL_JSON])
+        subprocess.run(["git", "add", JOURNAL_MD])
+        subprocess.run(["git", "commit", "-m", "Sync remote journal"])
+        subprocess.run(["git", "push"])
+    else:
+        print("Already up to date")
+
+
+if command == "init":
+    init()
+elif command == "entry":
+    add_entry()
+elif command == "sync":
+    sync()
+elif command == "pentry":
+    sync()
+    add_entry()
     subprocess.run(["git", "push"])
