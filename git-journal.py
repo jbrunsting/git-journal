@@ -7,13 +7,17 @@ import sys
 import tempfile
 import time
 import uuid
+from os.path import expanduser
 
 TIME_FORMAT = "%x %X %Z"
 JOURNAL_MD = "journal.md"
 JOURNAL_JSON = "journal.json"
 
 command = sys.argv[1]
-directory = sys.argv[2]
+if len(sys.argv) >= 3:
+    directory = sys.argv[2]
+else:
+    directory = expanduser("~") + "/.journal"
 os.chdir(directory)
 path_md = "{}/{}".format(directory, JOURNAL_MD)
 path_json = "{}/{}".format(directory, JOURNAL_JSON)
@@ -26,10 +30,7 @@ def files_exist():
 def commit_entry(entry_id, entry_timestamp, entry_body):
     with open(path_json, "r+") as json_file:
         entries = json.loads(json_file.read())
-        entries[entry_id] = {
-            "timestamp": entry_timestamp,
-            "body": entry_body
-        }
+        entries[entry_id] = {"timestamp": entry_timestamp, "body": entry_body}
         json_file.seek(0)
         json_file.write(json.dumps(entries))
         json_file.truncate()
